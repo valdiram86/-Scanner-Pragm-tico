@@ -105,14 +105,21 @@
     try {  
       const res = await fetch(API_URL + '?aba=TopVolumePragmatico');  
       const json = await res.json();  
-      const variacao = parseFloat(json.btcVariacao).toFixed(2);  
-      const texto = `📈 Variação do BTC nas últimas 24h: ${variacao}%`;  
+      const variacaoRaw = json.btcVariacao;  
+      const variacao = Number(variacaoRaw);  
+  
+      if (isNaN(variacao)) {  
+        throw new Error('Variação BTC inválida');  
+      }  
+  
+      const texto = `📈 Variação do BTC nas últimas 24h: ${variacao.toFixed(2)}%`;  
   
       const $el = $('#btc-variacao');  
       $el.text(texto);  
       $el.removeClass('positivo negativo');  
       $el.addClass(variacao >= 0 ? 'positivo' : 'negativo');  
     } catch (e) {  
+      console.error(e);  
       $('#btc-variacao').text('⚠️ Erro ao carregar BTC');  
     }  
   }  
