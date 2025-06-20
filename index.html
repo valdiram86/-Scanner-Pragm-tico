@@ -41,7 +41,8 @@
     <option value="todas">Mostrar todas</option>
   </select>
 
-  <button onclick="copiarTabelaComLinks()">📋 Copiar tabela com links</button>
+  <!-- Botão para abrir nova aba com a tabela para copiar -->
+  <button onclick="abrirTabelaParaCopiar()">🔗 Abrir tabela para copiar com links</button>
 
   <table id="tabelaGlobal" class="display" style="width:100%">
     <thead><tr id="cabecalhoTabela"></tr></thead>
@@ -166,36 +167,31 @@
     tabela.draw();
   }
 
-  // ✅ Cópia universal via seleção + execCommand (funciona em Android)
-  function copiarTabelaComLinks() {
+  // ✅ Método seguro: abrir nova aba para copiar com links ativos
+  function abrirTabelaParaCopiar() {
     const tabela = document.getElementById('tabelaGlobal');
     if (!tabela) return alert('Tabela não encontrada');
 
-    const tempDiv = document.createElement('div');
-    tempDiv.innerHTML = tabela.outerHTML;
-    tempDiv.style.position = 'fixed';
-    tempDiv.style.top = '-1000px';
-    document.body.appendChild(tempDiv);
-
-    const range = document.createRange();
-    range.selectNode(tempDiv);
-    const selection = window.getSelection();
-    selection.removeAllRanges();
-    selection.addRange(range);
-
-    try {
-      const sucesso = document.execCommand('copy');
-      if (sucesso) {
-        alert('✅ Tabela copiada com links! Cole no e-mail ou WhatsApp Web.');
-      } else {
-        alert('❌ Não foi possível copiar. Copie manualmente.');
-      }
-    } catch (err) {
-      alert('❌ Erro ao copiar: ' + err);
-    }
-
-    selection.removeAllRanges();
-    document.body.removeChild(tempDiv);
+    const htmlTabela = tabela.outerHTML;
+    const novaJanela = window.open('', '_blank');
+    novaJanela.document.write(`
+      <html>
+      <head>
+        <title>Tabela com Links</title>
+        <style>
+          body { font-family: Arial, sans-serif; padding: 20px; }
+          table { border-collapse: collapse; width: 100%; }
+          th, td { border: 1px solid #ddd; padding: 8px; white-space: nowrap; }
+          a { color: blue; text-decoration: underline; }
+        </style>
+      </head>
+      <body>
+        <h2>📋 Copie a tabela abaixo com Ctrl+C (ou toque e segure)</h2>
+        ${htmlTabela}
+      </body>
+      </html>
+    `);
+    novaJanela.document.close();
   }
 </script>
 </body>
