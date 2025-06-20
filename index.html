@@ -8,10 +8,18 @@
   <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css" />
   <style>
     body { font-family: Arial, sans-serif; background: #f5f5f5; padding: 20px; }
-    h1, h2 { color: #222; }
+    h1 { color: #222; }
     select, table { margin-top: 20px; }
-    .top-moedas { margin-bottom: 30px; padding: 15px; background: #fff; border-radius: 5px; }
     table.dataTable th, table.dataTable td { white-space: nowrap; }
+    #btc-variacao {
+      font-size: 18px;
+      margin-bottom: 20px;
+      padding: 10px;
+      border-radius: 5px;
+      font-weight: bold;
+    }
+    .positivo { color: green; }
+    .negativo { color: red; }
   </style>
 </head>
 <body>
@@ -19,10 +27,7 @@
   <h1>🔍 Scanner Pragmático — CoinMarketCap</h1>
   <p><a href="https://script.google.com/macros/s/AKfycbx5SzHPXb16HYdTVt_BMOAdcP5Dy21JbC1EiOyc4IsiQPMXV6SumyVgTreySF-3Z46rIg/exec" target="_blank">Ver dados brutos</a></p>
 
-  <div class="top-moedas">
-    <h2>🔥 Top 1 por faixa</h2>
-    <ul id="listaTop10"></ul>
-  </div>
+  <div id="btc-variacao">Carregando variação do BTC...</div>
 
   <label for="seletor">📂 Escolher faixa:</label>
   <select id="seletor">
@@ -43,12 +48,16 @@
   ];
 
   const API_URL = 'https://script.google.com/macros/s/AKfycbx5SzHPXb16HYdTVt_BMOAdcP5Dy21JbC1EiOyc4IsiQPMXV6SumyVgTreySF-3Z46rIg/exec';
+  const BTC_API_URL = 'https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest?id=1';
+  const CMC_API_KEY = 'c4382123-4586-4082-85b2-119603ed1ffd';
+
   let tabela;
   let cabecalhoGlobal = [];
   let todasMoedas = [];
 
   $(document).ready(async function () {
-    const topMoedas = [];
+    await carregarVariacaoBTC();
+
     $('#seletor').append(abas.map(aba => `<option value="${aba}">${aba}</option>`));
 
     for (const aba of abas) {
@@ -66,19 +75,12 @@
 
       const linhas = valores.slice(2).map(l => ({ aba, linha: l }));
       todasMoedas = todasMoedas.concat(linhas);
-
-      const topMoeda = linhas[0];
-      if (topMoeda && topMoeda.linha.length >= 3) {
-        topMoedas.push(`<li><strong>${aba}:</strong> <a href="${topMoeda.linha[2]}" target="_blank">${topMoeda.linha[0]}</a></li>`);
-      }
     }
-
-    $('#listaTop10').html(topMoedas.join(''));
 
     tabela = $('#tabelaGlobal').DataTable({
       data: [],
       columns: cabecalhoGlobal.map(titulo => ({ title: titulo })),
-      paging: false, // sem paginação
+      paging: false,
       lengthChange: false,
       order: [],
       language: {
@@ -94,6 +96,27 @@
       atualizarTabela(abaEscolhida);
     });
   });
+
+  async function carregarVariacaoBTC() {
+    try {
+      const res = await fetch(BTC_API_URL, {
+        headers: {
+          'X-CMC_PRO_API_KEY': CMC_API_KEY,
+          'Accept': 'application/json'
+        }
+      });
+      const data = await res.json();
+      const variacao = parseFloat(data.data["1"].quote.USD.percent_change_24h).toFixed(2);
+
+      const texto = `📈 Variação do BTC nas últimas 24h: ${variacao}%`;
+      const elemento = $('#btc-variacao');
+      elemento.text(texto);
+      elemento.addClass(variacao >= 0 ? 'positivo' : 'negativo');
+
+    } catch (erro) {
+      $('#btc-variacao').text('⚠️ Não foi possível carregar a variação do BTC');
+    }
+  }
 
   function atualizarTabela(abaSelecionada) {
     let filtradas = abaSelecionada === "todas"
