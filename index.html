@@ -1,12 +1,12 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>Painel Pragmático</title>
   <style>
     body {
       font-family: Arial, sans-serif;
-      background: #f9f9f9;
+      background: #f7f7f7;
       margin: 0;
       padding: 20px;
     }
@@ -18,7 +18,7 @@
 
     #abaSelect {
       display: block;
-      margin: 0 auto 20px auto;
+      margin: 20px auto;
       padding: 10px;
       font-size: 16px;
     }
@@ -26,21 +26,22 @@
     table {
       width: 100%;
       border-collapse: collapse;
-      margin-top: 10px;
+      margin-top: 20px;
     }
 
     th, td {
-      padding: 8px 12px;
       border: 1px solid #ccc;
+      padding: 8px 12px;
       text-align: left;
     }
 
     th {
-      background-color: #eee;
+      background-color: #ddd;
+      cursor: pointer;
     }
 
     tr:hover {
-      background-color: #f1f1f1;
+      background-color: #f0f0f0;
     }
 
     .link {
@@ -50,7 +51,7 @@
   </style>
 </head>
 <body>
-  <h1>Painel Pragmático</h1>
+  <h1>Painel Pragmático 📉📈</h1>
 
   <select id="abaSelect">
     <option value="TopPerdedoras_1_100">Top Perdedoras 1–100</option>
@@ -58,49 +59,82 @@
     <option value="TopPerdedoras_201_300">Top Perdedoras 201–300</option>
     <option value="TopPerdedoras_301_400">Top Perdedoras 301–400</option>
     <option value="TopPerdedoras_401_500">Top Perdedoras 401–500</option>
+    <option value="TopPerdedoras_501_750">Top Perdedoras 501–750</option>
+    <option value="TopPerdedoras_751_1000">Top Perdedoras 751–1000</option>
+    <option value="TopPerdedoras_1001_1250">Top Perdedoras 1001–1250</option>
+    <option value="TopPerdedoras_1251_1500">Top Perdedoras 1251–1500</option>
+    <option value="TopVolumePragmatico">Top Volume Pragmático</option>
   </select>
 
   <div id="tabelaContainer"></div>
 
   <script>
     const API_URL = 'https://script.google.com/macros/s/AKfycbx5SzHPXb16HYdTVt_BMOAdcP5Dy21JbC1EiOyc4IsiQPMXV6SumyVgTreySF-3Z46rIg/exec';
-
     const abaSelect = document.getElementById('abaSelect');
     const tabelaContainer = document.getElementById('tabelaContainer');
+
+    let dadosAtuais = [];
 
     function carregarAba(nomeAba) {
       fetch(`${API_URL}?aba=${encodeURIComponent(nomeAba)}`)
         .then(res => res.json())
         .then(data => {
-          const linhas = data.dados;
-          if (!linhas || !linhas.length) {
-            tabelaContainer.innerHTML = '<p>Nenhum dado encontrado.</p>';
-            return;
-          }
-
-          let html = '<table><thead><tr>';
-          linhas[0].forEach(cab => html += `<th>${cab}</th>`);
-          html += '</tr></thead><tbody>';
-
-          for (let i = 1; i < linhas.length; i++) {
-            html += '<tr>';
-            linhas[i].forEach(valor => {
-              const v = String(valor);
-              const cell = v.startsWith('http') 
-                ? `<a class="link" href="${v}" target="_blank">🔗 Link</a>` 
-                : v;
-              html += `<td>${cell}</td>`;
-            });
-            html += '</tr>';
-          }
-
-          html += '</tbody></table>';
-          tabelaContainer.innerHTML = html;
+          dadosAtuais = data.dados;
+          renderizarTabela(dadosAtuais);
         })
         .catch(err => {
           console.error(err);
           tabelaContainer.innerHTML = '<p>Erro ao carregar dados.</p>';
         });
+    }
+
+    function renderizarTabela(dados) {
+      if (!dados || dados.length === 0) {
+        tabelaContainer.innerHTML = '<p>Nenhum dado disponível.</p>';
+        return;
+      }
+
+      let html = '<table id="tabela"><thead><tr>';
+      dados[0].forEach((cab, idx) => {
+        html += `<th onclick="ordenarPorColuna(${idx})">${cab} 🔽</th>`;
+      });
+      html += '</tr></thead><tbody>';
+
+      for (let i = 1; i < dados.length; i++) {
+        html += '<tr>';
+        dados[i].forEach(valor => {
+          const v = String(valor);
+          const cell = v.startsWith('http')
+            ? `<a class="link" href="${v}" target="_blank">🔗 Link</a>`
+            : v;
+          html += `<td>${cell}</td>`;
+        });
+        html += '</tr>';
+      }
+
+      html += '</tbody></table>';
+      tabelaContainer.innerHTML = html;
+    }
+
+    function ordenarPorColuna(colIndex) {
+      const header = dadosAtuais[0];
+      const corpo = dadosAtuais.slice(1);
+
+      const colunaNumerica = corpo.every(linha => !isNaN(parseFloat(linha[colIndex])));
+
+      corpo.sort((a, b) => {
+        const valA = a[colIndex];
+        const valB = b[colIndex];
+
+        if (colunaNumerica) {
+          return parseFloat(valB) - parseFloat(valA); // Descendente
+        } else {
+          return String(valA).localeCompare(String(valB));
+        }
+      });
+
+      dadosAtuais = [header, ...corpo];
+      renderizarTabela(dadosAtuais);
     }
 
     abaSelect.addEventListener('change', () => {
