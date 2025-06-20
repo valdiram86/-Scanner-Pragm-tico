@@ -4,241 +4,177 @@
   <meta charset="UTF-8" />
   <title>Painel Pragmático</title>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 0;
-      display: flex;
-      background-color: #f9f9f9;
+    body { font-family: Arial, sans-serif; padding: 20px; background: #f8f8f8; }
+    input, select, button, textarea {
+      margin: 5px; padding: 6px; font-size: 14px;
     }
-
-    #painel {
-      flex: 1;
-      padding: 20px;
-      overflow-x: auto;
-    }
-
-    #lateral {
-      width: 320px;
-      background-color: #fff8e1;
-      border-left: 2px solid #ddd;
-      padding: 20px;
-      box-shadow: -2px 0 5px rgba(0, 0, 0, 0.05);
-    }
-
-    h1 {
-      text-align: center;
-      color: #333;
-    }
-
-    #alertaBTC {
-      text-align: center;
-      font-weight: bold;
-      margin: 10px 0;
-      font-size: 18px;
-      color: darkgreen;
-    }
-
-    #abaSelect {
-      display: block;
-      margin: 20px auto;
-      padding: 10px;
-      font-size: 16px;
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 10px;
-    }
-
-    th, td {
-      border: 1px solid #ccc;
-      padding: 8px 12px;
-      text-align: left;
-    }
-
-    th {
-      background-color: #eee;
-      cursor: pointer;
-    }
-
-    tr:hover {
-      background-color: #f1f1f1;
-    }
-
-    .link {
-      color: #0073e6;
-      text-decoration: none;
-    }
-
-    .faixa-volume {
-      background: #fff;
-      border: 1px solid #ccc;
-      margin-bottom: 10px;
-      padding: 10px;
-    }
-
-    .faixa-volume h4 {
-      margin: 0 0 5px;
-    }
-
-    .btc-alerta {
-      color: red;
-    }
+    button { cursor: pointer; }
+    textarea { width: 100%; height: 80px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+    th, td { border: 1px solid #ccc; padding: 6px; text-align: left; }
+    th { background-color: #eee; cursor: pointer; }
+    th.sortable::after { content: " ⬍"; font-size: 12px; }
+    tr:hover { background: #f1f1f1; }
+    #topQuedas { background: #d4f7d4; padding: 10px; margin-top: 15px; border: 1px solid #bbb; }
+    #totalMoedas, #busca { margin-top: 10px; }
   </style>
 </head>
 <body>
 
-<div id="painel">
-  <h1>Painel Pragmático 📉📈</h1>
-  <div id="alertaBTC">🔄 Carregando BTC...</div>
+  <h2>Painel Cripto Pragmático</h2>
 
+  <input type="email" placeholder="Seu e-mail" />
   <select id="abaSelect">
-    <option value="TopPerdedoras_1_100">Top Perdedoras 1–100</option>
-    <option value="TopPerdedoras_101_200">Top Perdedoras 101–200</option>
-    <option value="TopPerdedoras_201_300">Top Perdedoras 201–300</option>
-    <option value="TopPerdedoras_301_400">Top Perdedoras 301–400</option>
-    <option value="TopPerdedoras_401_500">Top Perdedoras 401–500</option>
-    <option value="TopPerdedoras_501_750">Top Perdedoras 501–750</option>
-    <option value="TopPerdedoras_751_1000">Top Perdedoras 751–1000</option>
-    <option value="TopPerdedoras_1001_1250">Top Perdedoras 1001–1250</option>
-    <option value="TopPerdedoras_1251_1500">Top Perdedoras 1251–1500</option>
+    <option value="TopPerdedoras_1_100">TopPerdedoras 1-100</option>
+    <option value="TopPerdedoras_101_200">TopPerdedoras 101-200</option>
+    <option value="TopPerdedoras_201_300">TopPerdedoras 201-300</option>
+    <option value="TopPerdedoras_301_400">TopPerdedoras 301-400</option>
+    <option value="TopPerdedoras_401_500">TopPerdedoras 401-500</option>
+    <option value="TopPerdedoras_501_750">TopPerdedoras 501-750</option>
+    <option value="TopPerdedoras_751_1000">TopPerdedoras 751-1000</option>
+    <option value="TopPerdedoras_1001_1250">TopPerdedoras 1001-1250</option>
+    <option value="TopPerdedoras_1251_1500">TopPerdedoras 1251-1500</option>
+    <option value="TopVolumePragmatico">Top Volume por Faixa</option>
   </select>
+  <button onclick="carregarAba()">Carregar Aba</button>
+  <button onclick="exportarCSV()">CSV</button>
 
-  <div id="tabelaContainer"></div>
-</div>
+  <div id="topQuedas">
+    <h4>📉 Top 10 quedas combinadas (7D + 30D) e maior volume:</h4>
+    <ul id="listaTop"></ul>
+  </div>
 
-<div id="lateral">
-  <h3>📊 Maior Volume por Faixa</h3>
-  <div id="topVolumeContainer">🔄 Carregando...</div>
-</div>
+  <h4>📝 Anotações Pessoais</h4>
+  <textarea id="anotacoes"></textarea>
+
+  <div>
+    <p>Total de moedas: <span id="totalMoedas">0</span></p>
+    <input type="text" id="busca" placeholder="Buscar..." onkeyup="filtrarTabela()" />
+  </div>
+
+  <table id="tabela">
+    <thead><tr id="cabecalho"></tr></thead>
+    <tbody></tbody>
+  </table>
 
 <script>
-  const API_URL = 'https://script.google.com/macros/s/AKfycbx5SzHPXb16HYdTVt_BMOAdcP5Dy21JbC1EiOyc4IsiQPMXV6SumyVgTreySF-3Z46rIg/exec';
-  const LIMIAR_BTC = 1.5;
+const URL_BASE = 'https://script.google.com/macros/s/AKfycbx5SzHPXb16HYdTVt_BMOAdcP5Dy21JbC1EiOyc4IsiQPMXV6SumyVgTreySF-3Z46rIg/exec';
+let dadosAtuais = [];
 
-  const abaSelect = document.getElementById('abaSelect');
-  const tabelaContainer = document.getElementById('tabelaContainer');
-  const alertaBTC = document.getElementById('alertaBTC');
-  const topVolumeContainer = document.getElementById('topVolumeContainer');
+window.onload = () => {
+  restaurarAnotacoes();
+  carregarAba(); // Carrega a primeira aba automaticamente
+};
 
-  let dadosAtuais = [];
-
-  function carregarAba(nomeAba) {
-    fetch(`${API_URL}?aba=${encodeURIComponent(nomeAba)}`)
-      .then(res => res.json())
-      .then(data => {
-        dadosAtuais = data.dados;
-        renderizarTabela(dadosAtuais);
-        verificarBTC(dadosAtuais);
-      })
-      .catch(err => {
-        console.error(err);
-        tabelaContainer.innerHTML = '<p>Erro ao carregar dados.</p>';
-      });
-  }
-
-  function verificarBTC(dados) {
-    if (!dados.length || !dados[0][0].toUpperCase().includes('BTC')) return;
-
-    const linhaBTC = dados[0][0].toUpperCase().includes('BTC') ? dados[0] : dados[1];
-    const texto = linhaBTC[1] || '';
-    const valorBTC = parseFloat(texto.replace('%', '').replace(',', '.'));
-
-    if (!isNaN(valorBTC)) {
-      if (valorBTC >= LIMIAR_BTC) {
-        alertaBTC.innerHTML = `🚨 BTC em alta: ${valorBTC}%`;
-        alertaBTC.classList.add('btc-alerta');
-      } else {
-        alertaBTC.innerHTML = `🔎 BTC atual: ${valorBTC}%`;
-        alertaBTC.classList.remove('btc-alerta');
-      }
-    }
-  }
-
-  function renderizarTabela(dados) {
-    if (!dados || dados.length === 0) {
-      tabelaContainer.innerHTML = '<p>Nenhum dado disponível.</p>';
-      return;
-    }
-
-    let html = '<table id="tabela"><thead><tr>';
-    dados[0].forEach((cab, idx) => {
-      html += `<th onclick="ordenarPorColuna(${idx})">${cab} 🔽</th>`;
+function carregarAba() {
+  const aba = document.getElementById("abaSelect").value;
+  fetch(`${URL_BASE}?aba=${encodeURIComponent(aba)}`)
+    .then(r => r.json())
+    .then(json => {
+      dadosAtuais = json.dados;
+      renderizarTabela(dadosAtuais);
+      renderizarTopQuedas(dadosAtuais);
+      document.getElementById("totalMoedas").innerText = dadosAtuais.length - 1;
     });
-    html += '</tr></thead><tbody>';
+}
 
-    for (let i = 1; i < dados.length; i++) {
-      html += '<tr>';
-      dados[i].forEach(valor => {
-        const v = String(valor);
-        const cell = v.startsWith('http')
-          ? `<a class="link" href="${v}" target="_blank">🔗 Link</a>`
-          : v;
-        html += `<td>${cell}</td>`;
-      });
-      html += '</tr>';
-    }
+function renderizarTabela(dados) {
+  const cabecalho = dados[0];
+  const linhas = dados.slice(1);
+  const head = document.getElementById("cabecalho");
+  const body = document.querySelector("#tabela tbody");
 
-    html += '</tbody></table>';
-    tabelaContainer.innerHTML = html;
-  }
+  head.innerHTML = "";
+  body.innerHTML = "";
 
-  function ordenarPorColuna(colIndex) {
-    const header = dadosAtuais[0];
-    const corpo = dadosAtuais.slice(1);
-
-    const colunaNumerica = corpo.every(linha => !isNaN(parseFloat(linha[colIndex])));
-
-    corpo.sort((a, b) => {
-      const valA = a[colIndex];
-      const valB = b[colIndex];
-
-      if (colunaNumerica) {
-        return parseFloat(valB) - parseFloat(valA);
-      } else {
-        return String(valA).localeCompare(String(valB));
-      }
-    });
-
-    dadosAtuais = [header, ...corpo];
-    renderizarTabela(dadosAtuais);
-  }
-
-  function carregarTopVolume() {
-    fetch(`${API_URL}?aba=TopVolumePragmatico`)
-      .then(res => res.json())
-      .then(data => {
-        const linhas = data.dados;
-        let html = '';
-
-        for (let i = 1; i < linhas.length; i++) {
-          const linha = linhas[i];
-          html += `
-            <div class="faixa-volume">
-              <h4>Faixa ${linha[0]}</h4>
-              <p><b>${linha[1]}</b> (Rank ${linha[2]})</p>
-              <p><a class="link" href="${linha[3]}" target="_blank">🔗 Link</a></p>
-              <p>1D: ${linha[4]}% | 7D: ${linha[5]}% | 30D: ${linha[6]}%</p>
-              <p><b>Volume:</b> ${linha[7]}</p>
-            </div>
-          `;
-        }
-
-        topVolumeContainer.innerHTML = html;
-      })
-      .catch(err => {
-        console.error(err);
-        topVolumeContainer.innerHTML = '<p>Erro ao carregar volume.</p>';
-      });
-  }
-
-  abaSelect.addEventListener('change', () => {
-    carregarAba(abaSelect.value);
+  cabecalho.forEach((h, i) => {
+    const th = document.createElement("th");
+    th.textContent = h;
+    th.classList.add("sortable");
+    th.onclick = () => ordenarPorColuna(i);
+    head.appendChild(th);
   });
 
-  carregarAba(abaSelect.value);
-  carregarTopVolume();
+  linhas.forEach(l => {
+    const tr = document.createElement("tr");
+    l.forEach(c => {
+      const td = document.createElement("td");
+      if (String(c).startsWith("http")) {
+        td.innerHTML = `<a href="${c}" target="_blank">🔗 Link</a>`;
+      } else {
+        td.textContent = c;
+      }
+      tr.appendChild(td);
+    });
+    body.appendChild(tr);
+  });
+}
+
+function ordenarPorColuna(index) {
+  const cab = dadosAtuais[0];
+  const corpo = dadosAtuais.slice(1);
+
+  const isNum = corpo.every(r => !isNaN(parseFloat(r[index])));
+  corpo.sort((a, b) => {
+    if (isNum) return parseFloat(b[index]) - parseFloat(a[index]);
+    return String(a[index]).localeCompare(b[index]);
+  });
+
+  renderizarTabela([cab, ...corpo]);
+}
+
+function renderizarTopQuedas(dados) {
+  const cab = dados[0];
+  const corpo = dados.slice(1);
+  const idx7 = cab.findIndex(h => /7[dD]/.test(h));
+  const idx30 = cab.findIndex(h => /30[dD]/.test(h));
+  const idxVol = cab.findIndex(h => /Volume/.test(h));
+  const idxNome = cab.findIndex(h => /Nome|Symbol|Símbolo/.test(h));
+
+  const top = corpo.map(r => ({
+    nome: r[idxNome],
+    queda: (parseFloat(r[idx7]) || 0) + (parseFloat(r[idx30]) || 0),
+    volume: parseFloat(r[idxVol]) || 0
+  }))
+  .filter(m => !isNaN(m.queda))
+  .sort((a, b) => a.queda - b.queda || b.volume - a.volume)
+  .slice(0, 10);
+
+  const ul = document.getElementById("listaTop");
+  ul.innerHTML = "";
+  top.forEach((m, i) => {
+    const li = document.createElement("li");
+    li.textContent = `📌 Queda Combinada #${i + 1}: ${m.nome}`;
+    ul.appendChild(li);
+  });
+}
+
+function exportarCSV() {
+  let csv = dadosAtuais.map(l => l.join(";")).join("\n");
+  const blob = new Blob([csv], { type: "text/csv" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "dados.csv";
+  a.click();
+}
+
+function filtrarTabela() {
+  const termo = document.getElementById("busca").value.toLowerCase();
+  const linhas = document.querySelectorAll("#tabela tbody tr");
+  linhas.forEach(tr => {
+    const visivel = [...tr.children].some(td => td.textContent.toLowerCase().includes(termo));
+    tr.style.display = visivel ? "" : "none";
+  });
+}
+
+document.getElementById("anotacoes").addEventListener("input", () => {
+  localStorage.setItem("anotacoes", document.getElementById("anotacoes").value);
+});
+
+function restaurarAnotacoes() {
+  const texto = localStorage.getItem("anotacoes");
+  if (texto) document.getElementById("anotacoes").value = texto;
+}
 </script>
 
 </body>
