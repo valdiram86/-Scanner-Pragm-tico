@@ -2,152 +2,99 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
-  <title>Top Volume por Faixa</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-
-  <!-- Estilos DataTables -->
+  <title>Pragmático Scanner</title>
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
   <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css" />
-  <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.1/css/buttons.dataTables.min.css" />
-
   <style>
-    body { font-family: Arial, sans-serif; background: #f4f4f4; padding: 20px; }
-    h1 { color: #004d00; }
-    #painel, #topVolumeContainer, #btcAlerta, #blocoNotas { margin-top: 20px; }
-    .faixa-volume {
-      background: white;
-      border-left: 4px solid #008000;
-      padding: 10px;
-      margin-bottom: 10px;
-      box-shadow: 0 0 4px rgba(0,0,0,0.1);
-    }
-    .faixa-volume h4 { margin: 0 0 5px; }
-    #btcAlerta { font-weight: bold; padding: 10px; border: 2px dashed #000; background: #e0ffe0; }
-    textarea {
-      width: 100%; min-height: 100px;
-      border: 1px solid #ccc; padding: 10px;
-      font-size: 15px;
-    }
+    body { font-family: Arial, sans-serif; padding: 20px; background: #f5f5f5; }
+    h1 { color: #333; }
+    .top-moedas { margin-bottom: 30px; background: #fff; padding: 15px; border-radius: 5px; }
+    table.dataTable th, table.dataTable td { white-space: nowrap; }
+    .tabela-container { margin-bottom: 50px; }
   </style>
 </head>
 <body>
 
-<h1>📊 Scanner - Top Volume por Faixa</h1>
+  <h1>🔍 Scanner Pragmático — CoinMarketCap</h1>
+  <p><a href="https://script.google.com/macros/s/AKfycbx5SzHPXb16HYdTVt_BMOAdcP5Dy21JbC1EiOyc4IsiQPMXV6SumyVgTreySF-3Z46rIg/exec" target="_blank">Abrir JSON direto</a></p>
 
-<!-- Alerta BTC -->
-<div id="btcAlerta">⏳ Carregando status do BTC...</div>
+  <div class="top-moedas" id="top10Moedas">
+    <h2>🔥 Top 1 por aba</h2>
+    <ul id="listaTop10"></ul>
+  </div>
 
-<!-- Tabela com dados -->
-<div id="painel">
-  <table id="tabela" class="display nowrap" width="100%"></table>
-</div>
-
-<!-- Top Volume por Faixa -->
-<h2>🔥 Maior Volume por Faixa</h2>
-<div id="topVolumeContainer"></div>
-
-<!-- Anotações Pessoais -->
-<div id="blocoNotas">
-  <h3>📝 Minhas Anotações</h3>
-  <textarea id="anotacoes" placeholder="Escreva suas observações..."></textarea>
-</div>
-
-<!-- Scripts -->
-<script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
-<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
-<script src="https://cdn.datatables.net/buttons/2.4.1/js/dataTables.buttons.min.js"></script>
-<script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.html5.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.1.3/jszip.min.js"></script>
+  <div id="tabelasContainer"></div>
 
 <script>
-const API_URL = 'https://script.google.com/macros/s/AKfycbx5SzHPXb16HYdTVt_BMOAdcP5Dy21JbC1EiOyc4IsiQPMXV6SumyVgTreySF-3Z46rIg/exec';
-let dadosAtuais = [];
+  const abas = [
+    'TopPerdedoras_1_100', 'TopPerdedoras_101_200', 'TopPerdedoras_201_300',
+    'TopPerdedoras_301_400', 'TopPerdedoras_401_500', 'TopPerdedoras_501_750',
+    'TopPerdedoras_751_1000', 'TopPerdedoras_1001_1250', 'TopPerdedoras_1251_1500',
+    'TopVolumePragmatico'
+  ];
 
-fetch(API_URL + '?aba=TopVolumePragmatico')
-  .then(res => res.json())
-  .then(json => {
-    const dados = json.dados;
-    const header = dados[0];
-    const linhas = dados.slice(1);
+  const API_URL = 'https://script.google.com/macros/s/AKfycbx5SzHPXb16HYdTVt_BMOAdcP5Dy21JbC1EiOyc4IsiQPMXV6SumyVgTreySF-3Z46rIg/exec';
 
-    // Render tabela principal
-    dadosAtuais = linhas.map(linha => header.map((col, i) =>
-      col.toLowerCase() === 'link' && typeof linha[i] === 'string'
-        ? `<a href="${linha[i]}" target="_blank">🔗</a>` : linha[i]
-    ));
+  $(document).ready(async function () {
+    const topMoedas = [];
 
-    $('#tabela').DataTable({
-      data: dadosAtuais,
-      columns: header.map(c => ({ title: c })),
-      destroy: true,
-      dom: 'Bfrtip',
-      buttons: [
-        { extend: 'csvHtml5', title: `TopVolume-${new Date().toLocaleDateString()}` },
-        { extend: 'excelHtml5', title: `TopVolume-${new Date().toLocaleDateString()}` }
-      ],
-      scrollX: true,
-      paging: false,
-      ordering: true,
-      info: false
-    });
+    for (const aba of abas) {
+      const response = await fetch(`${API_URL}?aba=${aba}`);
+      const data = await response.json();
+      const valores = data.dados;
+      if (valores.length < 2) continue;
 
-    // Exibir BTC alerta (linha 1, coluna 2)
-    const statusBTC = dados[1]?.[1] || "⚠️ Dados BTC não encontrados";
-    const alertDiv = document.getElementById("btcAlerta");
-    if (statusBTC.includes("🔥") || statusBTC.includes("✅")) {
-      alertDiv.style.background = "#d4edda";
-      alertDiv.style.borderColor = "#155724";
-    } else {
-      alertDiv.style.background = "#fff3cd";
-      alertDiv.style.borderColor = "#856404";
+      const headers = valores[1];
+      const linhas = valores.slice(2);
+      const idTabela = `tabela_${aba}`;
+
+      let html = `<div class="tabela-container"><h2>${aba}</h2>`;
+      html += `<table id="${idTabela}" class="display" style="width:100%"><thead><tr>`;
+
+      headers.forEach(header => html += `<th>${header}</th>`);
+      html += `</tr></thead><tbody>`;
+
+      linhas.forEach(linha => {
+        html += `<tr>`;
+        linha.forEach(cel => {
+          let celula = cel;
+          if (typeof cel === 'string' && cel.startsWith('http')) {
+            celula = `<a href="${cel}" target="_blank">🔗</a>`;
+          }
+          html += `<td>${celula}</td>`;
+        });
+        html += `</tr>`;
+      });
+
+      html += `</tbody></table></div>`;
+      $('#tabelasContainer').append(html);
+
+      $(`#${idTabela}`).DataTable({
+        pageLength: 5,
+        lengthChange: false,
+        order: [],
+        language: {
+          search: "🔎 Filtrar:",
+          paginate: {
+            first: "«",
+            previous: "‹",
+            next: "›",
+            last: "»"
+          },
+          info: "Exibindo _START_ a _END_ de _TOTAL_ entradas"
+        }
+      });
+
+      // Coletar top moeda da aba
+      const topMoeda = linhas[0];
+      if (topMoeda && topMoeda.length >= 3) {
+        topMoedas.push(`<li><strong>${aba}:</strong> <a href="${topMoeda[2]}" target="_blank">${topMoeda[0]}</a></li>`);
+      }
     }
-    alertDiv.innerHTML = `📉 Status BTC: <strong>${statusBTC}</strong>`;
 
-    // Render faixas
-    renderizarTopVolumeFaixas(dados);
+    $('#listaTop10').html(topMoedas.join(''));
   });
-
-// Geração dos blocos por faixa
-function renderizarTopVolumeFaixas(dados) {
-  const header = dados[0];
-  const linhas = dados.slice(1);
-
-  const colFaixa = header.indexOf("Faixa");
-  const colNome = header.indexOf("Nome");
-  const colRanking = header.indexOf("Ranking");
-  const colLink = header.indexOf("Link");
-  const colP1 = header.indexOf("24h (%)");
-  const colP7 = header.indexOf("7d (%)");
-  const colP30 = header.indexOf("30d (%)");
-  const colVolume = header.indexOf("Volume 24h");
-
-  const container = document.getElementById("topVolumeContainer");
-  container.innerHTML = "";
-
-  linhas.forEach(row => {
-    const bloco = document.createElement("div");
-    bloco.className = "faixa-volume";
-    bloco.innerHTML = `
-      <h4>Faixa ${row[colFaixa]}</h4>
-      <p><b>${row[colNome]}</b> (Rank ${row[colRanking]})</p>
-      <p><a href="${row[colLink]}" target="_blank">🔗 Acessar</a></p>
-      <p>24h: ${row[colP1]}% | 7D: ${row[colP7]}% | 30D: ${row[colP30]}%</p>
-      <p><b>Volume:</b> ${row[colVolume]}</p>
-    `;
-    container.appendChild(bloco);
-  });
-}
-
-// Anotações persistentes
-document.addEventListener('DOMContentLoaded', () => {
-  const anotacoesSalvas = localStorage.getItem("anotacoes_pessoais");
-  if (anotacoesSalvas) {
-    document.getElementById("anotacoes").value = anotacoesSalvas;
-  }
-});
-document.getElementById("anotacoes").addEventListener("input", function () {
-  localStorage.setItem("anotacoes_pessoais", this.value);
-});
 </script>
-
 </body>
 </html>
