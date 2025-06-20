@@ -4,8 +4,16 @@
   <meta charset="UTF-8" />
   <title>Scanner Pragmático</title>
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-  <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+
   <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css" />
+  <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+
+  <!-- DataTables Buttons -->
+  <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.1/css/buttons.dataTables.min.css" />
+  <script src="https://cdn.datatables.net/buttons/2.4.1/js/dataTables.buttons.min.js"></script>
+  <script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.html5.min.js"></script>
+  <script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.print.min.js"></script>
+
   <style>
     body { font-family: Arial, sans-serif; background: #f5f5f5; padding: 20px; }
     h1, h2 { color: #222; }
@@ -90,7 +98,28 @@
       language: {
         search: "🔎 Filtrar:",
         info: "Exibindo _TOTAL_ moedas"
-      }
+      },
+      dom: 'Bfrtip', // ativa os botões
+      buttons: [
+        {
+          extend: 'csvHtml5',
+          text: 'Exportar CSV',
+          exportOptions: {
+            format: {
+              body: function (data, row, column, node) {
+                return node.innerHTML || data;
+              }
+            }
+          }
+        },
+        {
+          extend: 'pdfHtml5',
+          text: 'Exportar PDF',
+          exportOptions: {
+            stripHtml: false // tenta manter os links, mas pode variar conforme visualizador PDF
+          }
+        }
+      ]
     });
 
     atualizarTabela("todas");
@@ -110,6 +139,7 @@
 
       const $el = $('#btc-variacao');
       $el.text(texto);
+      $el.removeClass('positivo negativo');
       $el.addClass(variacao >= 0 ? 'positivo' : 'negativo');
     } catch (e) {
       $('#btc-variacao').text('⚠️ Erro ao carregar BTC');
