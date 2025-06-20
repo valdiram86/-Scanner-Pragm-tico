@@ -6,14 +6,36 @@
   <style>
     body {
       font-family: Arial, sans-serif;
-      background: #f7f7f7;
       margin: 0;
+      display: flex;
+      background-color: #f9f9f9;
+    }
+
+    #painel {
+      flex: 1;
       padding: 20px;
+      overflow-x: auto;
+    }
+
+    #lateral {
+      width: 320px;
+      background-color: #fff8e1;
+      border-left: 2px solid #ddd;
+      padding: 20px;
+      box-shadow: -2px 0 5px rgba(0, 0, 0, 0.05);
     }
 
     h1 {
       text-align: center;
       color: #333;
+    }
+
+    #alertaBTC {
+      text-align: center;
+      font-weight: bold;
+      margin: 10px 0;
+      font-size: 18px;
+      color: darkgreen;
     }
 
     #abaSelect {
@@ -26,7 +48,7 @@
     table {
       width: 100%;
       border-collapse: collapse;
-      margin-top: 20px;
+      margin-top: 10px;
     }
 
     th, td {
@@ -36,22 +58,40 @@
     }
 
     th {
-      background-color: #ddd;
+      background-color: #eee;
       cursor: pointer;
     }
 
     tr:hover {
-      background-color: #f0f0f0;
+      background-color: #f1f1f1;
     }
 
     .link {
       color: #0073e6;
       text-decoration: none;
     }
+
+    .faixa-volume {
+      background: #fff;
+      border: 1px solid #ccc;
+      margin-bottom: 10px;
+      padding: 10px;
+    }
+
+    .faixa-volume h4 {
+      margin: 0 0 5px;
+    }
+
+    .btc-alerta {
+      color: red;
+    }
   </style>
 </head>
 <body>
+
+<div id="painel">
   <h1>Painel Pragmático 📉📈</h1>
+  <div id="alertaBTC">🔄 Carregando BTC...</div>
 
   <select id="abaSelect">
     <option value="TopPerdedoras_1_100">Top Perdedoras 1–100</option>
@@ -63,85 +103,143 @@
     <option value="TopPerdedoras_751_1000">Top Perdedoras 751–1000</option>
     <option value="TopPerdedoras_1001_1250">Top Perdedoras 1001–1250</option>
     <option value="TopPerdedoras_1251_1500">Top Perdedoras 1251–1500</option>
-    <option value="TopVolumePragmatico">Top Volume Pragmático</option>
   </select>
 
   <div id="tabelaContainer"></div>
+</div>
 
-  <script>
-    const API_URL = 'https://script.google.com/macros/s/AKfycbx5SzHPXb16HYdTVt_BMOAdcP5Dy21JbC1EiOyc4IsiQPMXV6SumyVgTreySF-3Z46rIg/exec';
-    const abaSelect = document.getElementById('abaSelect');
-    const tabelaContainer = document.getElementById('tabelaContainer');
+<div id="lateral">
+  <h3>📊 Maior Volume por Faixa</h3>
+  <div id="topVolumeContainer">🔄 Carregando...</div>
+</div>
 
-    let dadosAtuais = [];
+<script>
+  const API_URL = 'https://script.google.com/macros/s/AKfycbx5SzHPXb16HYdTVt_BMOAdcP5Dy21JbC1EiOyc4IsiQPMXV6SumyVgTreySF-3Z46rIg/exec';
+  const LIMIAR_BTC = 1.5;
 
-    function carregarAba(nomeAba) {
-      fetch(`${API_URL}?aba=${encodeURIComponent(nomeAba)}`)
-        .then(res => res.json())
-        .then(data => {
-          dadosAtuais = data.dados;
-          renderizarTabela(dadosAtuais);
-        })
-        .catch(err => {
-          console.error(err);
-          tabelaContainer.innerHTML = '<p>Erro ao carregar dados.</p>';
-        });
-    }
+  const abaSelect = document.getElementById('abaSelect');
+  const tabelaContainer = document.getElementById('tabelaContainer');
+  const alertaBTC = document.getElementById('alertaBTC');
+  const topVolumeContainer = document.getElementById('topVolumeContainer');
 
-    function renderizarTabela(dados) {
-      if (!dados || dados.length === 0) {
-        tabelaContainer.innerHTML = '<p>Nenhum dado disponível.</p>';
-        return;
-      }
+  let dadosAtuais = [];
 
-      let html = '<table id="tabela"><thead><tr>';
-      dados[0].forEach((cab, idx) => {
-        html += `<th onclick="ordenarPorColuna(${idx})">${cab} 🔽</th>`;
+  function carregarAba(nomeAba) {
+    fetch(`${API_URL}?aba=${encodeURIComponent(nomeAba)}`)
+      .then(res => res.json())
+      .then(data => {
+        dadosAtuais = data.dados;
+        renderizarTabela(dadosAtuais);
+        verificarBTC(dadosAtuais);
+      })
+      .catch(err => {
+        console.error(err);
+        tabelaContainer.innerHTML = '<p>Erro ao carregar dados.</p>';
       });
-      html += '</tr></thead><tbody>';
+  }
 
-      for (let i = 1; i < dados.length; i++) {
-        html += '<tr>';
-        dados[i].forEach(valor => {
-          const v = String(valor);
-          const cell = v.startsWith('http')
-            ? `<a class="link" href="${v}" target="_blank">🔗 Link</a>`
-            : v;
-          html += `<td>${cell}</td>`;
-        });
-        html += '</tr>';
+  function verificarBTC(dados) {
+    if (!dados.length || !dados[0][0].toUpperCase().includes('BTC')) return;
+
+    const linhaBTC = dados[0][0].toUpperCase().includes('BTC') ? dados[0] : dados[1];
+    const texto = linhaBTC[1] || '';
+    const valorBTC = parseFloat(texto.replace('%', '').replace(',', '.'));
+
+    if (!isNaN(valorBTC)) {
+      if (valorBTC >= LIMIAR_BTC) {
+        alertaBTC.innerHTML = `🚨 BTC em alta: ${valorBTC}%`;
+        alertaBTC.classList.add('btc-alerta');
+      } else {
+        alertaBTC.innerHTML = `🔎 BTC atual: ${valorBTC}%`;
+        alertaBTC.classList.remove('btc-alerta');
       }
+    }
+  }
 
-      html += '</tbody></table>';
-      tabelaContainer.innerHTML = html;
+  function renderizarTabela(dados) {
+    if (!dados || dados.length === 0) {
+      tabelaContainer.innerHTML = '<p>Nenhum dado disponível.</p>';
+      return;
     }
 
-    function ordenarPorColuna(colIndex) {
-      const header = dadosAtuais[0];
-      const corpo = dadosAtuais.slice(1);
+    let html = '<table id="tabela"><thead><tr>';
+    dados[0].forEach((cab, idx) => {
+      html += `<th onclick="ordenarPorColuna(${idx})">${cab} 🔽</th>`;
+    });
+    html += '</tr></thead><tbody>';
 
-      const colunaNumerica = corpo.every(linha => !isNaN(parseFloat(linha[colIndex])));
-
-      corpo.sort((a, b) => {
-        const valA = a[colIndex];
-        const valB = b[colIndex];
-
-        if (colunaNumerica) {
-          return parseFloat(valB) - parseFloat(valA); // Descendente
-        } else {
-          return String(valA).localeCompare(String(valB));
-        }
+    for (let i = 1; i < dados.length; i++) {
+      html += '<tr>';
+      dados[i].forEach(valor => {
+        const v = String(valor);
+        const cell = v.startsWith('http')
+          ? `<a class="link" href="${v}" target="_blank">🔗 Link</a>`
+          : v;
+        html += `<td>${cell}</td>`;
       });
-
-      dadosAtuais = [header, ...corpo];
-      renderizarTabela(dadosAtuais);
+      html += '</tr>';
     }
 
-    abaSelect.addEventListener('change', () => {
-      carregarAba(abaSelect.value);
+    html += '</tbody></table>';
+    tabelaContainer.innerHTML = html;
+  }
+
+  function ordenarPorColuna(colIndex) {
+    const header = dadosAtuais[0];
+    const corpo = dadosAtuais.slice(1);
+
+    const colunaNumerica = corpo.every(linha => !isNaN(parseFloat(linha[colIndex])));
+
+    corpo.sort((a, b) => {
+      const valA = a[colIndex];
+      const valB = b[colIndex];
+
+      if (colunaNumerica) {
+        return parseFloat(valB) - parseFloat(valA);
+      } else {
+        return String(valA).localeCompare(String(valB));
+      }
     });
 
+    dadosAtuais = [header, ...corpo];
+    renderizarTabela(dadosAtuais);
+  }
+
+  function carregarTopVolume() {
+    fetch(`${API_URL}?aba=TopVolumePragmatico`)
+      .then(res => res.json())
+      .then(data => {
+        const linhas = data.dados;
+        let html = '';
+
+        for (let i = 1; i < linhas.length; i++) {
+          const linha = linhas[i];
+          html += `
+            <div class="faixa-volume">
+              <h4>Faixa ${linha[0]}</h4>
+              <p><b>${linha[1]}</b> (Rank ${linha[2]})</p>
+              <p><a class="link" href="${linha[3]}" target="_blank">🔗 Link</a></p>
+              <p>1D: ${linha[4]}% | 7D: ${linha[5]}% | 30D: ${linha[6]}%</p>
+              <p><b>Volume:</b> ${linha[7]}</p>
+            </div>
+          `;
+        }
+
+        topVolumeContainer.innerHTML = html;
+      })
+      .catch(err => {
+        console.error(err);
+        topVolumeContainer.innerHTML = '<p>Erro ao carregar volume.</p>';
+      });
+  }
+
+  abaSelect.addEventListener('change', () => {
     carregarAba(abaSelect.value);
-  </script>
+  });
+
+  carregarAba(abaSelect.value);
+  carregarTopVolume();
+</script>
+
 </body>
 </html>
