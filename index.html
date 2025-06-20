@@ -8,7 +8,6 @@
   <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css" />
   <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
 
-  <!-- DataTables Buttons -->
   <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.1/css/buttons.dataTables.min.css" />
   <script src="https://cdn.datatables.net/buttons/2.4.1/js/dataTables.buttons.min.js"></script>
   <script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.html5.min.js"></script>
@@ -42,7 +41,6 @@
     <option value="todas">Mostrar todas</option>
   </select>
 
-  <!-- Botão para copiar a tabela com links -->
   <button onclick="copiarTabelaComLinks()">📋 Copiar tabela com links</button>
 
   <table id="tabelaGlobal" class="display" style="width:100%">
@@ -168,24 +166,36 @@
     tabela.draw();
   }
 
-  // NOVO: função para copiar HTML da tabela com links
+  // ✅ Cópia universal via seleção + execCommand (funciona em Android)
   function copiarTabelaComLinks() {
     const tabela = document.getElementById('tabelaGlobal');
     if (!tabela) return alert('Tabela não encontrada');
 
-    const htmlTabela = tabela.outerHTML;
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = tabela.outerHTML;
+    tempDiv.style.position = 'fixed';
+    tempDiv.style.top = '-1000px';
+    document.body.appendChild(tempDiv);
 
-    if (navigator.clipboard && navigator.clipboard.write) {
-      const blobInput = new Blob([htmlTabela], { type: 'text/html' });
-      const data = [new ClipboardItem({ 'text/html': blobInput })];
-      navigator.clipboard.write(data).then(() => {
-        alert('✅ Tabela copiada com sucesso com links!');
-      }).catch(err => {
-        alert('❌ Erro ao copiar: ' + err);
-      });
-    } else {
-      alert('❌ Navegador não suporta cópia de HTML formatado.');
+    const range = document.createRange();
+    range.selectNode(tempDiv);
+    const selection = window.getSelection();
+    selection.removeAllRanges();
+    selection.addRange(range);
+
+    try {
+      const sucesso = document.execCommand('copy');
+      if (sucesso) {
+        alert('✅ Tabela copiada com links! Cole no e-mail ou WhatsApp Web.');
+      } else {
+        alert('❌ Não foi possível copiar. Copie manualmente.');
+      }
+    } catch (err) {
+      alert('❌ Erro ao copiar: ' + err);
     }
+
+    selection.removeAllRanges();
+    document.body.removeChild(tempDiv);
   }
 </script>
 </body>
