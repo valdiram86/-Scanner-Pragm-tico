@@ -17,7 +17,7 @@
   <style>
     body { font-family: Arial, sans-serif; background: #f5f5f5; padding: 20px; }
     h1, h2 { color: #222; }
-    select, table { margin-top: 20px; }
+    select, table, button { margin-top: 20px; }
     table.dataTable th, table.dataTable td { white-space: nowrap; }
     .top-moedas { margin-bottom: 30px; padding: 15px; background: #fff; border-radius: 5px; }
     #btc-variacao { font-size: 18px; margin-bottom: 10px; font-weight: bold; }
@@ -41,6 +41,9 @@
   <select id="seletor">
     <option value="todas">Mostrar todas</option>
   </select>
+
+  <!-- Botão para copiar a tabela com links -->
+  <button onclick="copiarTabelaComLinks()">📋 Copiar tabela com links</button>
 
   <table id="tabelaGlobal" class="display" style="width:100%">
     <thead><tr id="cabecalhoTabela"></tr></thead>
@@ -99,7 +102,7 @@
         search: "🔎 Filtrar:",
         info: "Exibindo _TOTAL_ moedas"
       },
-      dom: 'Bfrtip', // ativa os botões
+      dom: 'Bfrtip',
       buttons: [
         {
           extend: 'csvHtml5',
@@ -116,7 +119,7 @@
           extend: 'pdfHtml5',
           text: 'Exportar PDF',
           exportOptions: {
-            stripHtml: false // tenta manter os links, mas pode variar conforme visualizador PDF
+            stripHtml: false
           }
         }
       ]
@@ -132,7 +135,7 @@
 
   async function carregarVariacaoBTC() {
     try {
-      const res = await fetch(API_URL); // sem parâmetro = apenas BTC
+      const res = await fetch(API_URL);
       const json = await res.json();
       const variacao = parseFloat(json.btc).toFixed(2);
       const texto = `📈 Variação do BTC nas últimas 24h: ${variacao}%`;
@@ -163,6 +166,26 @@
     tabela.clear();
     tabela.rows.add(dadosFinal);
     tabela.draw();
+  }
+
+  // NOVO: função para copiar HTML da tabela com links
+  function copiarTabelaComLinks() {
+    const tabela = document.getElementById('tabelaGlobal');
+    if (!tabela) return alert('Tabela não encontrada');
+
+    const htmlTabela = tabela.outerHTML;
+
+    if (navigator.clipboard && navigator.clipboard.write) {
+      const blobInput = new Blob([htmlTabela], { type: 'text/html' });
+      const data = [new ClipboardItem({ 'text/html': blobInput })];
+      navigator.clipboard.write(data).then(() => {
+        alert('✅ Tabela copiada com sucesso com links!');
+      }).catch(err => {
+        alert('❌ Erro ao copiar: ' + err);
+      });
+    } else {
+      alert('❌ Navegador não suporta cópia de HTML formatado.');
+    }
   }
 </script>
 </body>
