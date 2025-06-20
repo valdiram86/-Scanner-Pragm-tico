@@ -77,8 +77,8 @@
 
     tabela = $('#tabelaGlobal').DataTable({
       data: [],
-      columns: cabecalhoGlobal.map(() => ({ title: "" })),
-      paging: false, // ❌ desativa paginação
+      columns: cabecalhoGlobal.map(titulo => ({ title: titulo })),
+      paging: false, // sem paginação
       lengthChange: false,
       order: [],
       language: {
