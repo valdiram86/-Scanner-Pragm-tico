@@ -3,15 +3,23 @@
 <head>
   <meta charset="UTF-8" />
   <title>Scanner Pragmático</title>
+
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
   <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+  <script src="https://cdn.datatables.net/buttons/2.4.2/js/dataTables.buttons.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
+  <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.html5.min.js"></script>
+
   <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css" />
+  <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.2/css/buttons.dataTables.min.css" />
+
   <style>
     body {
       font-family: Arial, sans-serif;
       background: #f4f4f4;
       padding: 20px;
-      margin: 0;
     }
     h1, h2 { color: #222; }
     #btc-variacao {
@@ -47,7 +55,7 @@
     <option value="todas">Mostrar todas</option>
   </select>
 
-  <table id="tabelaGlobal" class="display" style="width:100%">
+  <table id="tabelaGlobal" class="display nowrap" style="width:100%">
     <thead><tr id="cabecalhoTabela"></tr></thead>
     <tbody></tbody>
   </table>
@@ -99,6 +107,21 @@
       columns: cabecalhoGlobal.map(titulo => ({ title: titulo })),
       paging: false,
       order: [],
+      dom: 'Bfrtip',
+      buttons: [
+        {
+          extend: 'csvHtml5',
+          text: '⬇️ Exportar CSV',
+          className: 'btn-export'
+        },
+        {
+          extend: 'pdfHtml5',
+          text: '📄 Exportar PDF',
+          className: 'btn-export',
+          orientation: 'landscape',
+          pageSize: 'A4'
+        }
+      ],
       language: {
         search: "🔎 Filtrar:",
         info: "Exibindo _TOTAL_ moedas"
